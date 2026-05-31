@@ -13,45 +13,55 @@ public class KlantDao {
                 "VALUES(?, ?, ?, ?)";
 
         try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, k.getKlantnummer());
+            ps.setInt(1, Integer.parseInt(k.getKlantnummer()));
             ps.setString(2, k.getVoornaam());
             ps.setString(3, k.getAchternaam());
             ps.setDouble(4, k.getJaarlijksVoorschot());
+
             ps.executeUpdate();
 
-            ResultSet rs = ps.getGeneratedKeys();
-            if (rs.next()) return rs.getInt(1);
+            // In deze database gebruiken we klantnummer als klant-id.
+            return Integer.parseInt(k.getKlantnummer());
 
         } catch (SQLException e) {
             e.printStackTrace();
+        } catch (NumberFormatException e) {
+            System.out.println("Klantnummer moet een getal zijn.");
         }
+
         return -1;
     }
 
     public ArrayList<Klant> getAll() {
         ArrayList<Klant> list = new ArrayList<>();
-        String sql = "SELECT * FROM klant ORDER BY id DESC";
+
+        // De tabel heeft geen kolom id, dus we gebruiken klantnummer.
+        String sql = "SELECT * FROM klant ORDER BY klantnummer DESC";
 
         try (Connection conn = Database.getConnection();
              Statement st = conn.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
 
             while (rs.next()) {
+                int klantnummer = rs.getInt("klantnummer");
+
                 Klant k = new Klant(
-                        rs.getInt("id"),
-                        rs.getString("klantnummer"),
+                        klantnummer,
+                        String.valueOf(klantnummer),
                         rs.getString("voornaam"),
                         rs.getString("achternaam"),
                         rs.getDouble("jaarlijks_voorschot")
                 );
+
                 list.add(k);
             }
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return list;
     }
 }
